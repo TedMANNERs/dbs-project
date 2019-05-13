@@ -79,7 +79,7 @@ namespace DbsProject
             {
                 var accidents = locationGroup.Where(x => x.IndikatorName == "Unfälle [pro 1000 Einw.]");
                 var schoolChildren = locationGroup.Where(x => x.IndikatorName == "Schül. Kindergarten [pro 1000 Einw.]");
-                var educationSpendings = locationGroup.Where(x => x.IndikatorName == "Nettoaufwand Bildung[Fr./ Einw.]");
+                var educationSpendings = locationGroup.Where(x => x.IndikatorName == "Nettoaufwand Bildung [Fr./Einw.]");
                 var transportationSpendings = locationGroup.Where(x => x.IndikatorName == "Nettoaufwand Verkehr [Fr./Einw.]");
                 exportData.Add(new ExportData
                 {

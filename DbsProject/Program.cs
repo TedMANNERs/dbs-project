@@ -2,9 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Schema;
 using StackExchange.Redis;
 
 namespace DbsProject
@@ -47,33 +44,12 @@ namespace DbsProject
                 }
                 Console.WriteLine("End of import");
             }
+
+            // Console.WriteLine("Remove records with IndikatorValue = 0.0");
+            // data = data.Where(x => x.IndikatorValue != "0.0").ToList();
+
             var exportData = new List<ExportData>();
             var groupedByLocation = data.GroupBy(x => x.GebietName).ToList();
-
-            //foreach (Data d in data)
-            //{
-            //    if (!exportData.ContainsKey(d.GebietName))
-            //        exportData[d.GebietName] = new ExportData();
-
-            //    exportData[d.GebietName].Year = Convert.ToInt32(d.IndikatorJahr);
-            //    switch (d.IndikatorName)
-            //    {
-            //        case "Unfälle [pro 1000 Einw.]":
-            //            exportData[d.GebietName].AccidentsPer1000Citizen = Convert.ToSingle(d.IndikatorValue);
-            //            break;
-            //        case "Schül. Kindergarten [pro 1000 Einw.]":
-            //            exportData[d.GebietName].SchoolChildrenPer1000Citizen = Convert.ToSingle(d.IndikatorValue);
-            //            break;
-            //        case "Nettoaufwand Bildung [Fr./Einw.]":
-            //            exportData[d.GebietName].PublicSpendingsEducationPerCitizen = Convert.ToSingle(d.IndikatorValue);
-            //            break;
-            //        case "Nettoaufwand Verkehr [Fr./Einw.]":
-            //            exportData[d.GebietName].PublicSpendingsTransportationPerCitizen = Convert.ToSingle(d.IndikatorValue);
-            //            break;
-            //        default:
-            //            break;
-            //    }
-            //}
 
             foreach (var locationGroup in groupedByLocation)
             {
@@ -84,14 +60,25 @@ namespace DbsProject
                 exportData.Add(new ExportData
                 {
                     Location = locationGroup.Key,
-                    AverageAccidentsPer1000Citizen = accidents.DefaultIfEmpty(new Data()).Average(x => Convert.ToSingle(x.IndikatorValue)),
-                    AverageSchoolChildrenPer1000Citizen = schoolChildren.DefaultIfEmpty(new Data()).Average(x => Convert.ToSingle(x.IndikatorValue)),
-                    AveragePublicSpendingsEducationPerCitizen = educationSpendings.DefaultIfEmpty(new Data()).Average(x => Convert.ToInt32(x.IndikatorValue)),
-                    AveragePublicSpendingsTransportationPerCitizen = transportationSpendings.DefaultIfEmpty(new Data()).Average(x => Convert.ToInt32(x.IndikatorValue))
+                    AverageAccidentsPer1000Citizen = accidents
+                        .DefaultIfEmpty(new Data())
+                        .Average(x => Convert.ToSingle(x.IndikatorValue)),
+
+                    AverageSchoolChildrenPer1000Citizen = schoolChildren
+                        .DefaultIfEmpty(new Data())
+                        .Average(x => Convert.ToSingle(x.IndikatorValue)),
+
+                    AveragePublicSpendingsEducationPerCitizen = educationSpendings
+                        .DefaultIfEmpty(new Data())
+                        .Average(x => Convert.ToSingle(x.IndikatorValue)),
+
+                    AveragePublicSpendingsTransportationPerCitizen = transportationSpendings
+                        .DefaultIfEmpty(new Data())
+                        .Average(x => Convert.ToSingle(x.IndikatorValue))
                 });
             }
             Console.WriteLine($"Reduced and converted {data.Count} entries to {exportData.Count}");
-            Console.WriteLine("Begin CSV-Export");
+            Console.WriteLine("Begin CSV-Export of min-max-normalized values");
 
             using (StreamWriter writer = new StreamWriter("dbs-export.csv", false))
             {
@@ -104,18 +91,26 @@ namespace DbsProject
 
                 foreach (var d in exportData)
                 {
+                    // Normalization could be optimized by calculating the min and max beforehand.
                     writer.WriteLine(string.Join(";",
                         d.Location,
-                        d.AverageAccidentsPer1000Citizen,
-                        d.AverageSchoolChildrenPer1000Citizen,
-                        d.AveragePublicSpendingsTransportationPerCitizen,
-                        d.AveragePublicSpendingsEducationPerCitizen));
+                        Normalize(d.AverageAccidentsPer1000Citizen, exportData, x => x.AverageAccidentsPer1000Citizen),
+                        Normalize(d.AverageSchoolChildrenPer1000Citizen, exportData, x => x.AverageSchoolChildrenPer1000Citizen),
+                        Normalize(d.AveragePublicSpendingsTransportationPerCitizen, exportData, x => x.AveragePublicSpendingsTransportationPerCitizen),
+                        Normalize(d.AveragePublicSpendingsEducationPerCitizen, exportData, x => x.AveragePublicSpendingsEducationPerCitizen)));
                 }
             }
 
             Console.WriteLine("done");
 
             Console.ReadLine();
+        }
+
+        private static float Normalize(float actualValue, IReadOnlyCollection<ExportData> exportData, Func<ExportData, float> selector)
+        {
+            var min = exportData.Min(selector);
+            var max = exportData.Max(selector);
+            return (actualValue - min) / (max - min);
         }
     }
 
@@ -124,7 +119,7 @@ namespace DbsProject
         public string Location { get; set; }
         public float AverageAccidentsPer1000Citizen { get; set; }
         public float AverageSchoolChildrenPer1000Citizen { get; set; }
-        public double AveragePublicSpendingsTransportationPerCitizen { get; set; }
-        public double AveragePublicSpendingsEducationPerCitizen { get; set; }
+        public float AveragePublicSpendingsTransportationPerCitizen { get; set; }
+        public float AveragePublicSpendingsEducationPerCitizen { get; set; }
     }
 }

@@ -57,6 +57,9 @@ namespace DbsProject
                 var schoolChildren = locationGroup.Where(x => x.IndikatorName == "Schül. Kindergarten [pro 1000 Einw.]");
                 var educationSpendings = locationGroup.Where(x => x.IndikatorName == "Nettoaufwand Bildung [Fr./Einw.]");
                 var transportationSpendings = locationGroup.Where(x => x.IndikatorName == "Nettoaufwand Verkehr [Fr./Einw.]");
+                var shareOfMen = locationGroup.Where(x => x.IndikatorName == "Bevölkerung: Männeranteil [%]");
+                var noOfVehicles = locationGroup.Where(x => x.IndikatorName == "Motorfahrzeuge [Anz.]");
+
                 exportData.Add(new ExportData
                 {
                     Location = locationGroup.Key,
@@ -74,6 +77,14 @@ namespace DbsProject
 
                     AveragePublicSpendingsTransportationPerCitizen = transportationSpendings
                         .DefaultIfEmpty(new Data())
+                        .Average(x => Convert.ToSingle(x.IndikatorValue)),
+
+                    AverageShareOfMen = shareOfMen
+                        .DefaultIfEmpty(new Data())
+                        .Average(x => Convert.ToSingle(x.IndikatorValue)),
+
+                    AverageNoOfVehicles = noOfVehicles
+                        .DefaultIfEmpty(new Data())
                         .Average(x => Convert.ToSingle(x.IndikatorValue))
                 });
             }
@@ -87,7 +98,9 @@ namespace DbsProject
                     nameof(ExportData.AverageAccidentsPer1000Citizen),
                     nameof(ExportData.AverageSchoolChildrenPer1000Citizen),
                     nameof(ExportData.AveragePublicSpendingsTransportationPerCitizen),
-                    nameof(ExportData.AveragePublicSpendingsEducationPerCitizen)));
+                    nameof(ExportData.AveragePublicSpendingsEducationPerCitizen),
+                    nameof(ExportData.AverageShareOfMen),
+                    nameof(ExportData.AverageNoOfVehicles)));
 
                 foreach (var d in exportData)
                 {
@@ -97,7 +110,9 @@ namespace DbsProject
                         Normalize(d.AverageAccidentsPer1000Citizen, exportData, x => x.AverageAccidentsPer1000Citizen),
                         Normalize(d.AverageSchoolChildrenPer1000Citizen, exportData, x => x.AverageSchoolChildrenPer1000Citizen),
                         Normalize(d.AveragePublicSpendingsTransportationPerCitizen, exportData, x => x.AveragePublicSpendingsTransportationPerCitizen),
-                        Normalize(d.AveragePublicSpendingsEducationPerCitizen, exportData, x => x.AveragePublicSpendingsEducationPerCitizen)));
+                        Normalize(d.AveragePublicSpendingsEducationPerCitizen, exportData, x => x.AveragePublicSpendingsEducationPerCitizen),
+                        Normalize(d.AverageShareOfMen, exportData, x => x.AverageShareOfMen),
+                        Normalize(d.AverageNoOfVehicles, exportData, x => x.AverageNoOfVehicles)));
                 }
             }
 
@@ -121,5 +136,7 @@ namespace DbsProject
         public float AverageSchoolChildrenPer1000Citizen { get; set; }
         public float AveragePublicSpendingsTransportationPerCitizen { get; set; }
         public float AveragePublicSpendingsEducationPerCitizen { get; set; }
+        public float AverageShareOfMen { get; set; }
+        public float AverageNoOfVehicles { get; set; }
     }
 }
